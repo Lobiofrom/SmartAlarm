@@ -59,7 +59,11 @@ fun MainScreen(
         mutableStateOf<Uri?>(null)
     }
     val getContent = rememberLauncherForActivityResult(RingtonePickerContract()) {
-        selectedMelodyUri = it
+        if (it == null) {
+            Toast.makeText(context, "Выберите мелодию", Toast.LENGTH_SHORT).show()
+        } else {
+            selectedMelodyUri = it
+        }
     }
     var sunRise by remember {
         mutableStateOf<CalculateSunRise?>(null)
@@ -70,32 +74,25 @@ fun MainScreen(
         viewModel.locationLong != null &&
         viewModel.locationLong != 0.0
     ) {
-        if (selectedMelodyUri == null) {
-            LaunchedEffect(Unit) {
-                Toast.makeText(context, "Выберите мелодию", Toast.LENGTH_SHORT).show()
-                getContent.launch()
-            }
-        } else {
-            LaunchedEffect(Unit) {
-                sunRise = CalculateSunRise(viewModel.locationLat!!, viewModel.locationLong!!)
-                val cal = Calendar.getInstance()
-                cal.add(Calendar.DAY_OF_MONTH, 1)
-                sunRise!!.times.rise?.hour?.let { cal.set(Calendar.HOUR_OF_DAY, it) }
-                sunRise!!.times.rise?.minute?.let { cal.set(Calendar.MINUTE, it) }
-                cal.isLenient = false
+        LaunchedEffect(Unit) {
+            sunRise = CalculateSunRise(viewModel.locationLat!!, viewModel.locationLong!!)
+            val cal = Calendar.getInstance()
+            cal.add(Calendar.DAY_OF_MONTH, 1)
+            sunRise!!.times.rise?.hour?.let { cal.set(Calendar.HOUR_OF_DAY, it) }
+            sunRise!!.times.rise?.minute?.let { cal.set(Calendar.MINUTE, it) }
+            cal.isLenient = false
 
-                alarm.createAlarm(cal.timeInMillis, state.hour, state.minute, selectedMelodyUri)
-                Log.d("timeInMillis", "timeInMillis====${formatter.format(cal.timeInMillis)}")
+            alarm.createAlarm(cal.timeInMillis, state.hour, state.minute, selectedMelodyUri)
+            Log.d("timeInMillis", "timeInMillis====${formatter.format(cal.timeInMillis)}")
 
-                Notifications.createNotification(
-                    context,
-                    state.hour,
-                    state.minute,
-                    sunRise?.times?.rise?.hour,
-                    sunRise?.times?.rise?.minute
-                )
-                Log.d("createAlarm", "createAlarm")
-            }
+            Notifications.createNotification(
+                context,
+                state.hour,
+                state.minute,
+                sunRise?.times?.rise?.hour,
+                sunRise?.times?.rise?.minute
+            )
+            Log.d("createAlarm", "createAlarm")
         }
     }
 
@@ -119,7 +116,7 @@ fun MainScreen(
         SnackbarHost(hostState = snackState)
     }
 
-    if (showTimePicker) {
+    if (showTimePicker && selectedMelodyUri != null) {
         TimePickerDialog(
             onCancel = { showTimePicker = false },
             onConfirm = {
